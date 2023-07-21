@@ -7,6 +7,7 @@ import {BaseHook} from "v4-periphery/BaseHook.sol";
 import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.sol";
 import {PoolId} from "@uniswap/v4-core/contracts/libraries/PoolId.sol";
 import {BalanceDelta} from "@uniswap/v4-core/contracts/types/BalanceDelta.sol";
+import {FrugalMedianLibrary} from "./lib/FrugalMedianLibrary.sol";
 
 contract RunningFrugalMedianHook is BaseHook {
     using PoolId for IPoolManager.PoolKey;
@@ -14,28 +15,15 @@ contract RunningFrugalMedianHook is BaseHook {
     uint256 public beforeSwapCount;
     uint256 public afterSwapCount;
 
-    mapping(bytes32 poolId => OracleConfig config) public configs;
     mapping(bytes32 poolId => MedianState median) public medians;
 
-    // hack: restrict pool to static configuration
-    struct OracleConfig {
-        uint256 bufferSize;
-        uint256 bufferIndex;
-        uint256 bufferLimit;
-    }
-
-    // fits in 256 bits
     struct MedianState {
-        int124 approxMedian;
-        int124 step;
+        int120 approxMedian;
+        int120 step;
         bool positive;
     }
 
     constructor(IPoolManager _poolManager) BaseHook(_poolManager) {}
-
-    function initHook(IPoolManager.PoolKey calldata poolKey, uint256 bufferLimit) external {
-        configs[poolKey.toId()] = OracleConfig({bufferSize: 0, bufferIndex: 0, bufferLimit: bufferLimit});
-    }
 
     function getHooksCalls() public pure override returns (Hooks.Calls memory) {
         return Hooks.Calls({
@@ -55,7 +43,15 @@ contract RunningFrugalMedianHook is BaseHook {
         override
         returns (bytes4)
     {
-        beforeSwapCount++;
+        bytes32 id = key.toId();
+        (, int24 tick,) = poolManager.getSlot0(id);
+
+        MedianState storage median = medians[id];
+        (int256 newMedian, int256 newStep, bool newPositive) =
+            FrugalMedianLibrary.updateApproxMedian(int256(tick), median.approxMedian, median.step, median.positive);
+        median.approxMedian = int120(newMedian);
+        median.step = int120(newStep);
+        median.positive = newPositive;
         return BaseHook.beforeSwap.selector;
     }
 
