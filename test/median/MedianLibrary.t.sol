@@ -36,7 +36,7 @@ contract MedianLibraryTest is Test {
         uint256 gasBefore = gasleft();
         sequence.medianRoundDown();
         uint256 gas = gasBefore - gasleft();
-        console.log(gas);
+        console.log("Median gas %s", gas);
         assertEq(sequence.medianRoundDown(), 3);
     }
 
