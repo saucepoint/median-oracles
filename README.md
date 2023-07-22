@@ -3,10 +3,12 @@
 
 > *from ETHGlobal Paris 2023*
 
-|                           | Gas (Read)                              |
+Alternative oracles, built with v4 Hooks to offer a more manipulation-resistant price feed
+
+| Algorithm                 | Gas (Read)                              |
 |---------------------------|---------------------------------------- |
 | Quickselect               | comically a lot (hundreds of thousands) |
-| Frugal-2U                 | comically a lot (hundreds of thousands) |
+| Frugal-2U                 | comically a lot (but less than QS)      |
 | Running Frugal-2U         | 4812                                    |
 | Quickselect Time-weighted | TBD                                     |
 | Frugal-2U Time-weighted   | TBD                                     |
@@ -15,14 +17,14 @@
 
 ## Median Price Oracle (Quickselect)
 
-The classic median: given a sequence of unordered fetch the median with the quickselect algorithm
+The classic: given a sequence of unordered fetch the median with the quickselect algorithm
 
-* Uses the quickselect algorithm
+* Uses an O(logn) algorithm
 * Depends on tick observations in storage
 
 ## Frugal Median Price Oracle
 
-The naive implementation of [RunningFrugalMedian](#running-frugal-median-price-oracle): approximate the median using `Frugal-2U` from a sequence of numbers.
+Approximates the median using `Frugal-2U` from a sequence of numbers (naive implementation).
 
 Frugal median algorithm compares new numbers against the current approximation and updates the approximation according to a dynamic *step*
 
@@ -34,7 +36,7 @@ Frugal median algorithm compares new numbers against the current approximation a
 The gas-optimized implementation of the frugal median approximation: calculating an on-going approximation of the median
 
 * Uses the frugal median-approxiation algorithm
-* Stores the *running* median (approximated) in directly storage
+* Stores the *running* median (approximated) in direct storage
 * *additional research™️ required for windowed support* 
 
 ### Future work: step-optimization
@@ -61,10 +63,10 @@ src/
     └── RingBufferLibrary.sol - optimized ring buffer for price observations
 
 test/
-├── FrugalMedianLens.t.sol
-├── MedianLens.t.sol
-├── RunningMedian.t.sol
-├── TickObserver.t.sol
+├── FrugalMedianLens.t.sol - test the naive frugal median
+├── MedianLens.t.sol - test the true median (quickselect)
+├── RunningMedian.t.sol - test the running median approximation
+├── TickObserver.t.sol - test the tick observer
 ├── implementation
 │   ├── ... - Uniswap overrides for testing
 ├── median
@@ -99,6 +101,6 @@ Credits
 * [Frugal Streaming for Estimating Quantiles:One (or two)
 memory suffices](https://arxiv.org/pdf/1407.1121v1.pdf)
 
-* [euler-xyz/median-oracle] and [median oracle discussions]
+* [euler-xyz/median-oracle](https://github.com/euler-xyz/median-oracle) and [median oracle discussions](https://ethresear.ch/t/median-prices-as-alternative-to-twap-an-optimised-proof-of-concept-analysis-and-simulation/12778)
 
-* [Uniswap TWAP analysis]
+* [Uniswap v3 TWAP Oracles in Proof of Stake](https://blog.uniswap.org/uniswap-v3-oracles)
