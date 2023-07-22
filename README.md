@@ -1,26 +1,58 @@
-# v4-template
-### **A template for writing Uniswap V4 Hooks 🦄**
+# median-oracles
+### **An experimental suite of Median Price Oracles via Uniswap v4 Hooks 🦄**
 
-[`Use this Template`](https://github.com/saucepoint/v4-template/generate)
+> *from ETHGlobal Paris 2023 / Arrakis Hookathon*
 
-1. The example hook [Counter.sol](src/Counter.sol) demonstrates the `beforeSwap()` and `afterSwap()` hooks
-2. The test template [Counter.t.sol](test/Counter.t.sol) preconfigures the V4 pool manager, test tokens, and test liquidity.
+|                           | Gas   |
+|---------------------------|-------|
+| Quickselect               | 12345 |
+| Frugal-2U                 | 12345 |
+| Running Frugal-2U         | 12345 |
+| Quickselect Time-weighted | TBD   |
+| Frugal-2U Time-weighted   | TBD   |
+
+> Methodology: obtain 50 unique tick observations by running swaps in both directions. Each swap is spaced 12 seconds apart. Use `gasleft()` before and after reading the median.
+
+## Median Price Oracle (Quickselect)
+
+## Frugal Median Price Oracle
+
+## Running Frugal Median Price Oracle
+
+### Future work: time-weighted medians
+
+The repo is in its early stages and did not have sufficient time to implement time-weighted medians. Time-weighted medians are likely to better represent the price since they account for the duration of a tick (price observation). The repo currently treats unique price observations as having equivalent durations.
+
 
 ---
 
-### Local Development (Anvil)
 
-Because v4 exceeds the bytecode limit of Ethereum and its *business licensed*, we can only deploy & test hooks on [anvil](https://book.getfoundry.sh/anvil/).
+```
+src/
+├── RunningFrugalMedianHook.sol - Running median approximation
+├── TickObserver.sol - store tick observations for windowed median reads
+├── lens
+│   ├── FrugalMedianLens.sol - read TickObserver and approximate median
+│   └── MedianLens.sol - read TickObserver and calculate true median
+└── lib
+    ├── FrugalMedianLibrary.sol - median approximation library
+    ├── MedianLibrary.sol - median calculation library (quickselect)
+    └── RingBufferLibrary.sol - optimized ring buffer for price observations
 
-```bash
-# start anvil, with a larger code limit
-anvil --code-size-limit 30000
-
-# in a new terminal
-forge script script/Counter.s.sol \
-    --rpc-url http://localhost:8545 \
-    --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
-    --broadcast
+test/
+├── FrugalMedianLens.t.sol
+├── MedianLens.t.sol
+├── RunningMedian.t.sol
+├── TickObserver.t.sol
+├── implementation
+│   ├── RunningFrugalMedianImplementation.sol
+│   └── TickObserverImplementation.sol
+├── median
+│   ├── FrugalMedianTest.t.sol - test frugal median algo
+│   └── MedianLibrary.t.sol - test quickselect algo
+└── utils
+    ├── HookTest.sol
+    └── RingBuffer.t.sol - test ring buffer
 ```
 
 ---
@@ -36,6 +68,6 @@ Additional resources:
 *requires [foundry](https://book.getfoundry.sh)*
 
 ```
-git clone https://github.com/saucepoint/v4-template
+forge install
 forge test
 ```
