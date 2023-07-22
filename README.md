@@ -1,9 +1,11 @@
 # median-oracles
-### **An experimental suite of Median Price Oracles via Uniswap v4 Hooks 🦄**
+### **An experimental suite of Median Price Oracles**
 
-> *from ETHGlobal Paris 2023*
+> *from ETHGlobal Paris 2023, built with Uniswap v4 Hooks 🦄*
 
-Alternative oracles, built with v4 Hooks to offer a more manipulation-resistant price feed
+Why not use TWAP? lower-liquidity pools are prone to manipulation!
+
+---
 
 | Algorithm                 | Gas (Read)                              |
 |---------------------------|---------------------------------------- |
@@ -13,23 +15,23 @@ Alternative oracles, built with v4 Hooks to offer a more manipulation-resistant 
 | Quickselect Time-weighted | TBD                                     |
 | Frugal-2U Time-weighted   | TBD                                     |
 
-> Methodology: obtain 50 *unique* tick observations by running swaps in both directions. Each swap is spaced 12 seconds apart. Use `gasleft()` before and after reading the median.
+> Methodology: obtain 50 *unique* tick observations by running swaps in both directions. Each swap is spaced 12 seconds apart. Use `gasleft()` before and after reading the median
 
 ## Median Price Oracle (Quickselect)
 
-The classic: given a sequence of unordered fetch the median with the quickselect algorithm
+The classic: given a sequence of unordered ticks, fetch the median with the quickselect algorithm
 
-* Uses an O(logn) algorithm
-* Depends on tick observations in storage
+* Uses an O(logn) algorithm on-read
+* Depends on tick observations written to storage
 
 ## Frugal Median Price Oracle
 
-Approximates the median using `Frugal-2U` from a sequence of numbers (naive implementation).
+Approximates the median using `Frugal-2U` from a sequence of numbers (naive implementation)
 
 Frugal median algorithm compares new numbers against the current approximation and updates the approximation according to a dynamic *step*
 
 * Uses the frugal median-approximation algorithm
-* Depends on tick observations in storage
+* Depends on tick observations written to storage
 
 ## Running Frugal Median Price Oracle
 
