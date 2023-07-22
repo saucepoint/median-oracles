@@ -46,15 +46,16 @@ contract RunningFrugalMedianHookTest is HookTest, Deployers, GasSnapshot {
         );
     }
 
-    function testRunningFrugalMedianHookHooks() public {
-        assertEq(hook.afterSwapCount(), 0);
-
+    function test_read() public {
         // Perform a test swap //
-        int256 amount = 100;
+        int256 amount = 1e18;
         bool zeroForOne = true;
+        swap(poolKey, amount, zeroForOne);
+        swap(poolKey, amount, zeroForOne);
         swap(poolKey, amount, zeroForOne);
         // ------------------- //
 
-        assertEq(hook.afterSwapCount(), 1);
+        int256 value = hook.readOracle(poolKey);
+        assertEq(value != 0, true);
     }
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
+import "forge-std/Test.sol";
 import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
 import {BaseHook} from "v4-periphery/BaseHook.sol";
 
@@ -9,7 +10,7 @@ import {PoolId} from "@uniswap/v4-core/contracts/libraries/PoolId.sol";
 import {BalanceDelta} from "@uniswap/v4-core/contracts/types/BalanceDelta.sol";
 import {FrugalMedianLibrary} from "./lib/FrugalMedianLibrary.sol";
 
-contract RunningFrugalMedianHook is BaseHook {
+contract RunningFrugalMedianHook is BaseHook, Test {
     using PoolId for IPoolManager.PoolKey;
 
     uint256 public beforeSwapCount;
@@ -24,6 +25,10 @@ contract RunningFrugalMedianHook is BaseHook {
     }
 
     constructor(IPoolManager _poolManager) BaseHook(_poolManager) {}
+
+    function readOracle(IPoolManager.PoolKey calldata key) external view returns (int256) {
+        return int256(medians[key.toId()].approxMedian);
+    }
 
     function getHooksCalls() public pure override returns (Hooks.Calls memory) {
         return Hooks.Calls({
@@ -45,10 +50,11 @@ contract RunningFrugalMedianHook is BaseHook {
     {
         bytes32 id = key.toId();
         (, int24 tick,) = poolManager.getSlot0(id);
-
+        console2.log(int256(tick));
         MedianState storage median = medians[id];
         (int256 newMedian, int256 newStep, bool newPositive) =
             FrugalMedianLibrary.updateApproxMedian(int256(tick), median.approxMedian, median.step, median.positive);
+        console2.log(newMedian);
         median.approxMedian = int120(newMedian);
         median.step = int120(newStep);
         median.positive = newPositive;
