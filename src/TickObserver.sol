@@ -13,6 +13,7 @@ import {RingBufferLibrary} from "./lib/RingBufferLibrary.sol";
 struct BufferData {
     int16 currentTick;
     uint256 bufferIndex;
+    uint256 count;
     uint256 lastUpdate;
 }
 
@@ -31,36 +32,24 @@ contract TickObserver is BaseHook, Test {
 
     constructor(IPoolManager _poolManager) BaseHook(_poolManager) {}
 
-    // TODO: allow for arbitrary time ranges
-    function get10MinObservations(IPoolManager.PoolKey calldata key) external view returns (int256[] memory sequence) {
+    // TODO: replace with time-based selection
+    function get50Observations(IPoolManager.PoolKey calldata key) external view returns (int256[] memory sequence) {
         bytes32 id = key.toId();
         uint256[8192] memory buffer = buffers[id];
         BufferData memory data = bufferData[id];
-
-        // worse case scenario
-        // each index in the sequence corresponds to 12 seconds, so 50 = 10 minutes (600s)
-        sequence = new int256[](50);
-
         uint256 bufferIndex = data.bufferIndex;
-        uint256 sequenceIndex = 49; // most recent
+
+        sequence = new int256[](50);
 
         int16 tick;
         uint16 duration;
         uint256 i;
-        uint256 j;
         for (i; i < 50;) {
             (tick, duration) = buffer.read(bufferIndex);
-            if (duration == 0) break;
-            for (j = 0; j < duration;) {
-                sequence[sequenceIndex] = int256(tick);
-                unchecked {
-                    ++j;
-                }
-            }
+            sequence[49 - i] = unQuantiseTick(tick);
             unchecked {
                 ++i;
                 bufferIndex -= duration;
-                sequenceIndex -= i;
             }
         }
     }
@@ -68,7 +57,7 @@ contract TickObserver is BaseHook, Test {
     function getHooksCalls() public pure override returns (Hooks.Calls memory) {
         return Hooks.Calls({
             beforeInitialize: false,
-            afterInitialize: false,
+            afterInitialize: true,
             beforeModifyPosition: false,
             afterModifyPosition: false,
             beforeSwap: true,
@@ -76,6 +65,16 @@ contract TickObserver is BaseHook, Test {
             beforeDonate: false,
             afterDonate: false
         });
+    }
+
+    function afterInitialize(address, IPoolManager.PoolKey calldata key, uint160, int24)
+        external
+        override
+        poolManagerOnly
+        returns (bytes4)
+    {
+        bufferData[key.toId()].lastUpdate = block.timestamp;
+        return BaseHook.afterInitialize.selector;
     }
 
     function beforeSwap(address, IPoolManager.PoolKey calldata key, IPoolManager.SwapParams calldata)
@@ -99,6 +98,9 @@ contract TickObserver is BaseHook, Test {
 
         data.currentTick = newTick;
         data.lastUpdate = block.timestamp;
+        unchecked {
+            ++data.count;
+        }
 
         return BaseHook.beforeSwap.selector;
     }
