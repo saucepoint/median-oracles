@@ -18,7 +18,8 @@ contract TickObserverTest is HookTest, Deployers, GasSnapshot {
     using PoolId for IPoolManager.PoolKey;
     using CurrencyLibrary for Currency;
 
-    TickObserver hook = TickObserver(address(uint160(Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG)));
+    TickObserver hook =
+        TickObserver(address(uint160(Hooks.AFTER_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG)));
     IPoolManager.PoolKey poolKey;
     bytes32 poolId;
 
@@ -48,7 +49,7 @@ contract TickObserverTest is HookTest, Deployers, GasSnapshot {
 
     function test_read() public {
         // Perform a test swap //
-        int256 amount = 0.01e18;
+        int256 amount = 0.1e18;
         bool zeroForOne = true;
         swap(poolKey, amount, zeroForOne);
         skip(12);
@@ -58,6 +59,11 @@ contract TickObserverTest is HookTest, Deployers, GasSnapshot {
         skip(12);
         // ------------------- //
 
-        hook.get10MinObservations(poolKey);
+        int256[] memory sequence = hook.get50Observations(poolKey);
+        console2.log(sequence[0]);
+        console2.log(sequence[1]);
+        console2.log(sequence[25]);
+        console2.log(sequence[48]);
+        console2.log(sequence[49]);
     }
 }
