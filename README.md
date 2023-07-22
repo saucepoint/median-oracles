@@ -11,13 +11,34 @@
 | Quickselect Time-weighted | TBD   |
 | Frugal-2U Time-weighted   | TBD   |
 
-> Methodology: obtain 50 unique tick observations by running swaps in both directions. Each swap is spaced 12 seconds apart. Use `gasleft()` before and after reading the median.
+> Methodology: obtain 50 *unique* tick observations by running swaps in both directions. Each swap is spaced 12 seconds apart. Use `gasleft()` before and after reading the median.
 
 ## Median Price Oracle (Quickselect)
 
+The classic median: given a sequence of unordered fetch the median with the quickselect algorithm
+
+* Uses the quickselect algorithm
+* Depends on tick observations in storage
+
 ## Frugal Median Price Oracle
 
+The naive implementation of [RunningFrugalMedian](): approximate the median using `Frugal-2U` from a sequence of numbers.
+
+Frugal median algorithm compares new numbers against the current approximation and updates the approximation according to a dynamic *step*
+
+* Uses the frugal median-approximation algorithm
+* Depends on tick observations in storage
+
 ## Running Frugal Median Price Oracle
+
+The storage-optimized implementation of [FrugalMedian](): Only maintain two memory slots for the median approximation (the median and the step modifier)
+
+* Uses the frugal median-approxiation algorithm
+* Stores the running median (approximated) in directly storage
+* *additional research™️ required for windowed support* 
+
+### Future work: step-optimization
+In the frugal median algorithm, the dynamic *step* can be modified to favor stabilization or responsiveness/accuracy. The repo uses 1-tick as a step, but the implementation is set up for additional experimentation
 
 ### Future work: time-weighted medians
 
@@ -45,8 +66,7 @@ test/
 ├── RunningMedian.t.sol
 ├── TickObserver.t.sol
 ├── implementation
-│   ├── RunningFrugalMedianImplementation.sol
-│   └── TickObserverImplementation.sol
+│   ├── ... - Uniswap overrides for testing
 ├── median
 │   ├── FrugalMedianTest.t.sol - test frugal median algo
 │   └── MedianLibrary.t.sol - test quickselect algo
@@ -71,3 +91,14 @@ Additional resources:
 forge install
 forge test
 ```
+
+---
+
+Credits
+
+* [Frugal Streaming for Estimating Quantiles:One (or two)
+memory suffices](https://arxiv.org/pdf/1407.1121v1.pdf)
+
+* [euler-xyz/median-oracle] and [median oracle discussions]
+
+* [Uniswap TWAP analysis]
