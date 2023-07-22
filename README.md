@@ -54,29 +54,29 @@ The repo is in its early stages and did not have sufficient time to implement ti
 
 ```
 src/
-├── RunningFrugalMedianHook.sol - Running median approximation
-├── TickObserver.sol - store tick observations for windowed median reads
+├── RunningFrugalMedianHook.sol   Running median approximation
+├── TickObserver.sol              store tick observations for windowed median reads
 ├── lens
-│   ├── FrugalMedianLens.sol - read TickObserver and approximate median
-│   └── MedianLens.sol - read TickObserver and calculate true median
+│   ├── FrugalMedianLens.sol      read TickObserver and approximate median
+│   └── MedianLens.sol            read TickObserver and calculate true median
 └── lib
-    ├── FrugalMedianLibrary.sol - median approximation library
-    ├── MedianLibrary.sol - median calculation library (quickselect)
-    └── RingBufferLibrary.sol - optimized ring buffer for price observations
+    ├── FrugalMedianLibrary.sol   median approximation library
+    ├── MedianLibrary.sol         median calculation library (quickselect)
+    └── RingBufferLibrary.sol     optimized ring buffer for price observations
 
 test/
-├── FrugalMedianLens.t.sol - test the naive frugal median
-├── MedianLens.t.sol - test the true median (quickselect)
-├── RunningMedian.t.sol - test the running median approximation
-├── TickObserver.t.sol - test the tick observer
+├── FrugalMedianLens.t.sol        test the naive frugal median
+├── MedianLens.t.sol              test the true median (quickselect)
+├── RunningMedian.t.sol           test the running median approximation
+├── TickObserver.t.sol            test the tick observer
 ├── implementation
-│   ├── ... - Uniswap overrides for testing
+│   ├── ...                       Uniswap overrides for testing
 ├── median
-│   ├── FrugalMedianTest.t.sol - test frugal median algo
-│   └── MedianLibrary.t.sol - test quickselect algo
+│   ├── FrugalMedianTest.t.sol    test frugal median algo
+│   └── MedianLibrary.t.sol       test quickselect algo
 └── utils
     ├── HookTest.sol
-    └── RingBuffer.t.sol - test ring buffer
+    └── RingBuffer.t.sol          test ring buffer
 ```
 
 ---
