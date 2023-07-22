@@ -1,15 +1,15 @@
 # median-oracles
 ### **An experimental suite of Median Price Oracles via Uniswap v4 Hooks 🦄**
 
-> *from ETHGlobal Paris 2023 / Arrakis Hookathon*
+> *from ETHGlobal Paris 2023*
 
-|                           | Gas   |
-|---------------------------|-------|
-| Quickselect               | 12345 |
-| Frugal-2U                 | 12345 |
-| Running Frugal-2U         | 12345 |
-| Quickselect Time-weighted | TBD   |
-| Frugal-2U Time-weighted   | TBD   |
+|                           | Gas (Read)                              |
+|---------------------------|---------------------------------------- |
+| Quickselect               | comically a lot (hundreds of thousands) |
+| Frugal-2U                 | comically a lot (hundreds of thousands) |
+| Running Frugal-2U         | 4812                                    |
+| Quickselect Time-weighted | TBD                                     |
+| Frugal-2U Time-weighted   | TBD                                     |
 
 > Methodology: obtain 50 *unique* tick observations by running swaps in both directions. Each swap is spaced 12 seconds apart. Use `gasleft()` before and after reading the median.
 
@@ -22,7 +22,7 @@ The classic median: given a sequence of unordered fetch the median with the quic
 
 ## Frugal Median Price Oracle
 
-The naive implementation of [RunningFrugalMedian](): approximate the median using `Frugal-2U` from a sequence of numbers.
+The naive implementation of [RunningFrugalMedian](#running-frugal-median-price-oracle): approximate the median using `Frugal-2U` from a sequence of numbers.
 
 Frugal median algorithm compares new numbers against the current approximation and updates the approximation according to a dynamic *step*
 
@@ -31,10 +31,10 @@ Frugal median algorithm compares new numbers against the current approximation a
 
 ## Running Frugal Median Price Oracle
 
-The storage-optimized implementation of [FrugalMedian](): Only maintain two memory slots for the median approximation (the median and the step modifier)
+The gas-optimized implementation of the frugal median approximation: calculating an on-going approximation of the median
 
 * Uses the frugal median-approxiation algorithm
-* Stores the running median (approximated) in directly storage
+* Stores the *running* median (approximated) in directly storage
 * *additional research™️ required for windowed support* 
 
 ### Future work: step-optimization

@@ -55,7 +55,9 @@ contract FrugalMedianLensTest is HookTest, Deployers, GasSnapshot {
         (, int24 tick,) = manager.getSlot0(poolId);
         assertEq(tick != 0, true);
 
+        uint256 gasBefore = gasleft();
         int256 medianPrice = medianLens.readOracle(poolKey, 50);
+        console.log("Frugal Median Lens %s", gasBefore - gasleft());
         // TODO: investigate discrepancy against true median
         assertEq(medianPrice == -678, true);
     }

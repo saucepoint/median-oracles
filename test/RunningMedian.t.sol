@@ -49,7 +49,9 @@ contract RunningFrugalMedianHookTest is HookTest, Deployers, GasSnapshot {
     function test_read() public {
         createSwaps();
 
+        uint256 gasBefore = gasleft();
         int256 value = hook.readOracle(poolKey);
+        console.log("Running Frugal Median %s", gasBefore - gasleft());
         assertEq(value == -499, true);
     }
 
