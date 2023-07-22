@@ -2,7 +2,7 @@
 pragma solidity ^0.8.15;
 
 library MedianLibrary {
-    function medianRoundDown(uint256[] memory nums) public pure returns (uint256) {
+    function medianRoundDown(int256[] memory nums) public pure returns (int256) {
         uint256 k;
         unchecked {
             k = (nums.length / 2) - 1;
@@ -10,11 +10,11 @@ library MedianLibrary {
         return findKthSmallest(nums, k);
     }
 
-    function medianMidPoint(uint256[] memory nums) public pure returns (uint256) {
+    function medianMidPoint(int256[] memory nums) public pure returns (int256) {
         uint256 n = nums.length;
         if (n % 2 == 0) {
-            uint256 lower = findKthSmallest(nums, (n / 2) - 1);
-            uint256 higher = findKthSmallest(nums, (n / 2));
+            int256 lower = findKthSmallest(nums, (n / 2) - 1);
+            int256 higher = findKthSmallest(nums, (n / 2));
             return (lower + higher) / 2;
         } else {
             return findKthSmallest(nums, (n / 2));
@@ -22,11 +22,7 @@ library MedianLibrary {
     }
 
     // -- Quick Select -- //
-    function quickselect(uint256[] memory arr, uint256 left, uint256 right, uint256 k)
-        internal
-        pure
-        returns (uint256)
-    {
+    function quickselect(int256[] memory arr, uint256 left, uint256 right, uint256 k) internal pure returns (int256) {
         if (left == right) {
             return arr[left];
         }
@@ -42,9 +38,9 @@ library MedianLibrary {
         }
     }
 
-    function partition(uint256[] memory arr, uint256 left, uint256 right) internal pure returns (uint256) {
+    function partition(int256[] memory arr, uint256 left, uint256 right) internal pure returns (uint256) {
         // arbitrary pivot selection?
-        uint256 pivotValue = arr[right];
+        int256 pivotValue = arr[right];
         uint256 i = left;
         uint256 j;
         // iterate from left index to right index
@@ -73,7 +69,7 @@ library MedianLibrary {
     /// @dev Uses the quick select algorithm O(log2(n))
     /// @param arr The array to search
     /// @param k The index of the element to search for. k = 0 returns the smallest
-    function findKthSmallest(uint256[] memory arr, uint256 k) public pure returns (uint256) {
+    function findKthSmallest(int256[] memory arr, uint256 k) public pure returns (int256) {
         require(0 <= k && k < arr.length, "Invalid k value");
         uint256 right;
         unchecked {

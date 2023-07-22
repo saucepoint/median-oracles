@@ -5,12 +5,12 @@ import "forge-std/Test.sol";
 import {MedianLibrary} from "../../src/lib/MedianLibrary.sol";
 
 contract MedianLibraryTest is Test {
-    using MedianLibrary for uint256[];
+    using MedianLibrary for int256[];
 
     function setUp() public {}
 
     function test_medianSimple() public {
-        uint256[] memory sequence = new uint256[](8);
+        int256[] memory sequence = new int256[](8);
         sequence[0] = 4;
         sequence[1] = 2;
         sequence[2] = 1;
@@ -23,7 +23,7 @@ contract MedianLibraryTest is Test {
     }
 
     function test_medianGas() public {
-        uint256[] memory sequence = new uint256[](8);
+        int256[] memory sequence = new int256[](8);
         sequence[0] = 4;
         sequence[1] = 2;
         sequence[2] = 1;
@@ -41,13 +41,13 @@ contract MedianLibraryTest is Test {
     }
 
     function test_medianRoundDown() public {
-        uint256[] memory nums = new uint256[](2);
+        int256[] memory nums = new int256[](2);
         nums[0] = 1;
         nums[1] = 2;
-        uint256 median = nums.medianRoundDown();
+        int256 median = nums.medianRoundDown();
         assertEq(median, 1);
 
-        nums = new uint256[](4);
+        nums = new int256[](4);
         nums[0] = 1;
         nums[1] = 2;
         nums[2] = 3;
@@ -57,13 +57,13 @@ contract MedianLibraryTest is Test {
     }
 
     function test_medianRoundDown_unsorted() public {
-        uint256[] memory nums = new uint256[](2);
+        int256[] memory nums = new int256[](2);
         nums[0] = 20;
         nums[1] = 10;
-        uint256 median = nums.medianRoundDown();
+        int256 median = nums.medianRoundDown();
         assertEq(median, 10);
 
-        nums = new uint256[](4);
+        nums = new int256[](4);
         nums[0] = 20;
         nums[1] = 10;
         nums[2] = 30;
@@ -73,13 +73,13 @@ contract MedianLibraryTest is Test {
     }
 
     function test_medianMidPoint() public {
-        uint256[] memory nums = new uint256[](2);
+        int256[] memory nums = new int256[](2);
         nums[0] = 10;
         nums[1] = 20;
-        uint256 median = nums.medianMidPoint();
+        int256 median = nums.medianMidPoint();
         assertEq(median, 15);
 
-        nums = new uint256[](3);
+        nums = new int256[](3);
         nums[0] = 10;
         nums[1] = 20;
         nums[2] = 30;
@@ -88,13 +88,13 @@ contract MedianLibraryTest is Test {
     }
 
     function test_medianMidPoint_unsorted() public {
-        uint256[] memory nums = new uint256[](2);
+        int256[] memory nums = new int256[](2);
         nums[0] = 20;
         nums[1] = 10;
-        uint256 median = nums.medianMidPoint();
+        int256 median = nums.medianMidPoint();
         assertEq(median, 15);
 
-        nums = new uint256[](3);
+        nums = new int256[](3);
         nums[0] = 20;
         nums[1] = 10;
         nums[2] = 30;
