@@ -50,11 +50,11 @@ contract RunningFrugalMedianHook is BaseHook, Test {
     {
         bytes32 id = key.toId();
         (, int24 tick,) = poolManager.getSlot0(id);
-        console2.log(int256(tick));
+
         MedianState storage median = medians[id];
         (int256 newMedian, int256 newStep, bool newPositive) =
             FrugalMedianLibrary.updateApproxMedian(int256(tick), median.approxMedian, median.step, median.positive);
-        console2.log(newMedian);
+
         median.approxMedian = int120(newMedian);
         median.step = int120(newStep);
         median.positive = newPositive;
