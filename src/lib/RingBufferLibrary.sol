@@ -2,7 +2,7 @@
 pragma solidity ^0.8.15;
 
 library RingBufferLibrary {
-    function read(uint256[8192] storage buffer, uint256 index) public view returns (int16 tick, uint16 duration) {
+    function read(uint256[8192] calldata buffer, uint256 index) public pure returns (int16 tick, uint16 duration) {
         unchecked {
             uint256 packed = buffer[index / 8];
             uint256 shift = 32 * (index % 8);
