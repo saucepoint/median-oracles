@@ -47,15 +47,25 @@ contract RunningFrugalMedianHookTest is HookTest, Deployers, GasSnapshot {
     }
 
     function test_read() public {
-        // Perform a test swap //
-        int256 amount = 1e18;
-        bool zeroForOne = true;
-        swap(poolKey, amount, zeroForOne);
-        swap(poolKey, amount, zeroForOne);
-        swap(poolKey, amount, zeroForOne);
-        // ------------------- //
+        createSwaps();
 
         int256 value = hook.readOracle(poolKey);
-        assertEq(value != 0, true);
+        assertEq(value == -499, true);
+    }
+
+    function createSwaps() internal {
+        int256 amount0 = 0.01e18;
+        int256 amount1 = 0.003e18;
+
+        uint256 count;
+
+        // create 50 unique observations
+        while (count < 50) {
+            swap(poolKey, amount0, true);
+            skip(12);
+            swap(poolKey, amount1, false);
+            skip(12);
+            ++count;
+        }
     }
 }

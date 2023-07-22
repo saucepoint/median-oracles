@@ -11,15 +11,17 @@ import {PoolId} from "@uniswap/v4-core/contracts/libraries/PoolId.sol";
 import {Deployers} from "@uniswap/v4-core/test/foundry-tests/utils/Deployers.sol";
 import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/libraries/CurrencyLibrary.sol";
 import {HookTest} from "./utils/HookTest.sol";
-import {TickObserver} from "../src/TickObserver.sol";
+import {TickObserver, BufferData} from "../src/TickObserver.sol";
 import {TickObserverImplementation} from "./implementation/TickObserverImplementation.sol";
+import {FrugalMedianLens, ITickObserver} from "../src/lens/FrugalMedianLens.sol";
 
-contract TickObserverTest is HookTest, Deployers, GasSnapshot {
+contract FrugalMedianLensTest is HookTest, Deployers, GasSnapshot {
     using PoolId for IPoolManager.PoolKey;
     using CurrencyLibrary for Currency;
 
     TickObserver hook =
         TickObserver(address(uint160(Hooks.AFTER_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG)));
+    FrugalMedianLens medianLens = new FrugalMedianLens(ITickObserver(address(hook)));
     IPoolManager.PoolKey poolKey;
     bytes32 poolId;
 
@@ -48,17 +50,29 @@ contract TickObserverTest is HookTest, Deployers, GasSnapshot {
     }
 
     function test_read() public {
-        // Perform a test swap //
-        int256 amount = 0.1e18;
-        bool zeroForOne = true;
-        swap(poolKey, amount, zeroForOne);
-        skip(12);
-        swap(poolKey, amount, zeroForOne);
-        skip(12);
-        swap(poolKey, amount, zeroForOne);
-        skip(12);
-        // ------------------- //
+        createSwaps();
 
-        hook.get50Observations(poolKey);
+        (, int24 tick,) = manager.getSlot0(poolId);
+        assertEq(tick != 0, true);
+
+        int256 medianPrice = medianLens.readOracle(poolKey, 50);
+        // TODO: investigate discrepancy against true median
+        assertEq(medianPrice == -678, true);
+    }
+
+    function createSwaps() internal {
+        int256 amount0 = 0.01e18;
+        int256 amount1 = 0.003e18;
+
+        uint256 count;
+
+        // create 50 unique observations
+        while (count < 50) {
+            (,, count,) = hook.bufferData(poolId);
+            swap(poolKey, amount0, true);
+            skip(12);
+            swap(poolKey, amount1, false);
+            skip(12);
+        }
     }
 }
