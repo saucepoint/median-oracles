@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
+import "forge-std/Test.sol";
 import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
 import {BaseHook} from "v4-periphery/BaseHook.sol";
 
@@ -9,7 +10,13 @@ import {PoolId} from "@uniswap/v4-core/contracts/libraries/PoolId.sol";
 import {BalanceDelta} from "@uniswap/v4-core/contracts/types/BalanceDelta.sol";
 import {RingBufferLibrary} from "./lib/RingBufferLibrary.sol";
 
-contract Counter is BaseHook {
+struct BufferData {
+    int16 currentTick;
+    uint256 bufferIndex;
+    uint256 lastUpdate;
+}
+
+contract TickObserver is BaseHook, Test {
     using PoolId for IPoolManager.PoolKey;
     using RingBufferLibrary for uint256[8192];
 
@@ -19,16 +26,44 @@ contract Counter is BaseHook {
     mapping(bytes32 poolId => uint256[8192] buffer) public buffers;
     mapping(bytes32 poolId => BufferData) public bufferData;
 
-    struct BufferData {
-        int16 currentTick;
-        uint256 bufferIndex;
-        uint256 lastUpdate;
-    }
-
     int256 constant TICK_TRUNCATION = 30;
-    uint256 bufferMax = 65536;
+    uint256 internal constant bufferMax = 65536;
 
     constructor(IPoolManager _poolManager) BaseHook(_poolManager) {}
+
+    // TODO: allow for arbitrary time ranges
+    function get10MinObservations(IPoolManager.PoolKey calldata key) external view returns (int256[] memory sequence) {
+        bytes32 id = key.toId();
+        uint256[8192] memory buffer = buffers[id];
+        BufferData memory data = bufferData[id];
+
+        // worse case scenario
+        // each index in the sequence corresponds to 12 seconds, so 50 = 10 minutes (600s)
+        sequence = new int256[](50);
+
+        uint256 bufferIndex = data.bufferIndex;
+        uint256 sequenceIndex = 49; // most recent
+
+        int16 tick;
+        uint16 duration;
+        uint256 i;
+        uint256 j;
+        for (i; i < 50;) {
+            (tick, duration) = buffer.read(bufferIndex);
+            if (duration == 0) break;
+            for (j = 0; j < duration;) {
+                sequence[sequenceIndex] = int256(tick);
+                unchecked {
+                    ++j;
+                }
+            }
+            unchecked {
+                ++i;
+                bufferIndex -= duration;
+                sequenceIndex -= i;
+            }
+        }
+    }
 
     function getHooksCalls() public pure override returns (Hooks.Calls memory) {
         return Hooks.Calls({
