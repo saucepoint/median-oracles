@@ -6,17 +6,18 @@ import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
 import {BaseHook} from "v4-periphery/BaseHook.sol";
 
 import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.sol";
-import {PoolId} from "@uniswap/v4-core/contracts/libraries/PoolId.sol";
+import {PoolIdLibrary, PoolId} from "@uniswap/v4-core/contracts/types/PoolId.sol";
+import {PoolKey} from "@uniswap/v4-core/contracts/types/PoolKey.sol";
 import {BalanceDelta} from "@uniswap/v4-core/contracts/types/BalanceDelta.sol";
 import {FrugalMedianLibrary} from "./lib/FrugalMedianLibrary.sol";
 
 contract RunningFrugalMedianHook is BaseHook, Test {
-    using PoolId for IPoolManager.PoolKey;
+    using PoolIdLibrary for PoolKey;
 
     uint256 public beforeSwapCount;
     uint256 public afterSwapCount;
 
-    mapping(bytes32 poolId => MedianState median) public medians;
+    mapping(PoolId poolId => MedianState median) public medians;
 
     struct MedianState {
         int120 approxMedian;
@@ -26,7 +27,7 @@ contract RunningFrugalMedianHook is BaseHook, Test {
 
     constructor(IPoolManager _poolManager) BaseHook(_poolManager) {}
 
-    function readOracle(IPoolManager.PoolKey calldata key) external view returns (int256) {
+    function readOracle(PoolKey calldata key) external view returns (int256) {
         return int256(medians[key.toId()].approxMedian);
     }
 
@@ -43,13 +44,13 @@ contract RunningFrugalMedianHook is BaseHook, Test {
         });
     }
 
-    function beforeSwap(address, IPoolManager.PoolKey calldata key, IPoolManager.SwapParams calldata)
+    function beforeSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata, bytes calldata)
         external
         override
         returns (bytes4)
     {
-        bytes32 id = key.toId();
-        (, int24 tick,) = poolManager.getSlot0(id);
+        PoolId id = key.toId();
+        (, int24 tick,,,,) = poolManager.getSlot0(id);
 
         MedianState storage median = medians[id];
         (int256 newMedian, int256 newStep, bool newPositive) =
@@ -61,7 +62,7 @@ contract RunningFrugalMedianHook is BaseHook, Test {
         return BaseHook.beforeSwap.selector;
     }
 
-    function afterSwap(address, IPoolManager.PoolKey calldata, IPoolManager.SwapParams calldata, BalanceDelta)
+    function afterSwap(address, PoolKey calldata, IPoolManager.SwapParams calldata, BalanceDelta, bytes calldata)
         external
         override
         returns (bytes4)

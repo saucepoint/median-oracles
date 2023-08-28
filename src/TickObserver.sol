@@ -6,7 +6,8 @@ import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
 import {BaseHook} from "v4-periphery/BaseHook.sol";
 
 import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.sol";
-import {PoolId} from "@uniswap/v4-core/contracts/libraries/PoolId.sol";
+import {PoolIdLibrary, PoolId} from "@uniswap/v4-core/contracts/types/PoolId.sol";
+import {PoolKey} from "@uniswap/v4-core/contracts/types/PoolKey.sol";
 import {BalanceDelta} from "@uniswap/v4-core/contracts/types/BalanceDelta.sol";
 import {RingBufferLibrary} from "./lib/RingBufferLibrary.sol";
 
@@ -18,14 +19,14 @@ struct BufferData {
 }
 
 contract TickObserver is BaseHook, Test {
-    using PoolId for IPoolManager.PoolKey;
+    using PoolIdLibrary for PoolKey;
     using RingBufferLibrary for uint256[8192];
 
     uint256 public beforeSwapCount;
     uint256 public afterSwapCount;
 
-    mapping(bytes32 poolId => uint256[8192] buffer) public buffers;
-    mapping(bytes32 poolId => BufferData) public bufferData;
+    mapping(PoolId poolId => uint256[8192] buffer) public buffers;
+    mapping(PoolId poolId => BufferData) public bufferData;
 
     int256 constant TICK_TRUNCATION = 30;
     uint256 internal constant bufferMax = 65536;
@@ -33,8 +34,8 @@ contract TickObserver is BaseHook, Test {
     constructor(IPoolManager _poolManager) BaseHook(_poolManager) {}
 
     // TODO: replace with time-based selection
-    function get50Observations(IPoolManager.PoolKey calldata key) external view returns (int256[] memory sequence) {
-        bytes32 id = key.toId();
+    function get50Observations(PoolKey calldata key) external view returns (int256[] memory sequence) {
+        PoolId id = key.toId();
         uint256[8192] memory buffer = buffers[id];
         BufferData memory data = bufferData[id];
         uint256 bufferIndex = data.bufferIndex;
@@ -67,7 +68,7 @@ contract TickObserver is BaseHook, Test {
         });
     }
 
-    function afterInitialize(address, IPoolManager.PoolKey calldata key, uint160, int24)
+    function afterInitialize(address, PoolKey calldata key, uint160, int24, bytes calldata)
         external
         override
         poolManagerOnly
@@ -77,13 +78,13 @@ contract TickObserver is BaseHook, Test {
         return BaseHook.afterInitialize.selector;
     }
 
-    function beforeSwap(address, IPoolManager.PoolKey calldata key, IPoolManager.SwapParams calldata)
+    function beforeSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata, bytes calldata)
         external
         override
         returns (bytes4)
     {
-        bytes32 id = key.toId();
-        (, int24 tick,) = poolManager.getSlot0(id);
+        PoolId id = key.toId();
+        (, int24 tick,,,,) = poolManager.getSlot0(id);
         BufferData storage data = bufferData[id];
 
         int16 newTick = int16(quantiseTick(tick));
@@ -105,7 +106,7 @@ contract TickObserver is BaseHook, Test {
         return BaseHook.beforeSwap.selector;
     }
 
-    function afterSwap(address, IPoolManager.PoolKey calldata, IPoolManager.SwapParams calldata, BalanceDelta)
+    function afterSwap(address, PoolKey calldata, IPoolManager.SwapParams calldata, BalanceDelta, bytes calldata)
         external
         override
         returns (bytes4)
