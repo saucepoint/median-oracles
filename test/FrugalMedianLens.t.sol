@@ -7,23 +7,24 @@ import {IHooks} from "@uniswap/v4-core/contracts/interfaces/IHooks.sol";
 import {Hooks} from "@uniswap/v4-core/contracts/libraries/Hooks.sol";
 import {TickMath} from "@uniswap/v4-core/contracts/libraries/TickMath.sol";
 import {IPoolManager} from "@uniswap/v4-core/contracts/interfaces/IPoolManager.sol";
-import {PoolId} from "@uniswap/v4-core/contracts/libraries/PoolId.sol";
+import {PoolIdLibrary, PoolId} from "@uniswap/v4-core/contracts/types/PoolId.sol";
+import {PoolKey} from "@uniswap/v4-core/contracts/types/PoolKey.sol";
 import {Deployers} from "@uniswap/v4-core/test/foundry-tests/utils/Deployers.sol";
-import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/libraries/CurrencyLibrary.sol";
+import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Currency.sol";
 import {HookTest} from "./utils/HookTest.sol";
 import {TickObserver, BufferData} from "../src/TickObserver.sol";
 import {TickObserverImplementation} from "./implementation/TickObserverImplementation.sol";
 import {FrugalMedianLens, ITickObserver} from "../src/lens/FrugalMedianLens.sol";
 
 contract FrugalMedianLensTest is HookTest, Deployers, GasSnapshot {
-    using PoolId for IPoolManager.PoolKey;
+    using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
 
     TickObserver hook =
         TickObserver(address(uint160(Hooks.AFTER_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG)));
     FrugalMedianLens medianLens = new FrugalMedianLens(ITickObserver(address(hook)));
-    IPoolManager.PoolKey poolKey;
-    bytes32 poolId;
+    PoolKey poolKey;
+    PoolId poolId;
 
     function setUp() public {
         vm.warp(1690023971);
@@ -37,9 +38,9 @@ contract FrugalMedianLensTest is HookTest, Deployers, GasSnapshot {
 
         // Create the pool
         poolKey =
-            IPoolManager.PoolKey(Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, 60, IHooks(hook));
-        poolId = PoolId.toId(poolKey);
-        manager.initialize(poolKey, SQRT_RATIO_1_1);
+            PoolKey(Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, 60, IHooks(hook));
+        poolId = PoolIdLibrary.toId(poolKey);
+        manager.initialize(poolKey, SQRT_RATIO_1_1, ZERO_BYTES);
 
         // Provide liquidity to the pool
         modifyPositionRouter.modifyPosition(poolKey, IPoolManager.ModifyPositionParams(-60, 60, 10 ether));
@@ -52,7 +53,7 @@ contract FrugalMedianLensTest is HookTest, Deployers, GasSnapshot {
     function test_read() public {
         createSwaps();
 
-        (, int24 tick,) = manager.getSlot0(poolId);
+        (, int24 tick,,,,) = manager.getSlot0(poolId);
         assertEq(tick != 0, true);
 
         uint256 gasBefore = gasleft();
