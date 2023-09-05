@@ -21,7 +21,7 @@ contract MedianLensTest is HookTest, Deployers, GasSnapshot {
     using CurrencyLibrary for Currency;
 
     TickObserver hook =
-        TickObserver(address(uint160(Hooks.AFTER_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG)));
+        TickObserver(address(uint160(Hooks.AFTER_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG)));
     MedianLens medianLens = new MedianLens(ITickObserver(address(hook)));
     PoolKey poolKey;
     PoolId poolId;

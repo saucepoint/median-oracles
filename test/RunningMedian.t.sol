@@ -20,7 +20,7 @@ contract RunningFrugalMedianHookTest is HookTest, Deployers, GasSnapshot {
     using CurrencyLibrary for Currency;
 
     RunningFrugalMedianHook hook =
-        RunningFrugalMedianHook(address(uint160(Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG)));
+        RunningFrugalMedianHook(address(uint160(Hooks.BEFORE_SWAP_FLAG)));
     PoolKey poolKey;
     PoolId poolId;
 
