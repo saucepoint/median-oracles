@@ -24,9 +24,6 @@ contract TickObserver is BaseHook, Test {
     using PoolIdLibrary for PoolKey;
     using RingBufferLibrary for uint256[8192];
 
-    uint256 public beforeSwapCount;
-    uint256 public afterSwapCount;
-
     mapping(PoolId poolId => uint256[8192] buffer) public buffers;
     mapping(PoolId poolId => BufferData) public bufferData;
 
@@ -63,7 +60,7 @@ contract TickObserver is BaseHook, Test {
             beforeModifyPosition: false,
             afterModifyPosition: false,
             beforeSwap: true,
-            afterSwap: true,
+            afterSwap: false,
             beforeDonate: false,
             afterDonate: false
         });
@@ -105,15 +102,6 @@ contract TickObserver is BaseHook, Test {
         }
 
         return BaseHook.beforeSwap.selector;
-    }
-
-    function afterSwap(address, PoolKey calldata, IPoolManager.SwapParams calldata, BalanceDelta, bytes calldata)
-        external
-        override
-        returns (bytes4)
-    {
-        afterSwapCount++;
-        return BaseHook.afterSwap.selector;
     }
 
     function clampTime(uint256 t) private pure returns (uint256) {

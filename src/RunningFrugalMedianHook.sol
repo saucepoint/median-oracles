@@ -14,9 +14,6 @@ import {FrugalMedianLibrary} from "./lib/FrugalMedianLibrary.sol";
 contract RunningFrugalMedianHook is BaseHook, Test {
     using PoolIdLibrary for PoolKey;
 
-    uint256 public beforeSwapCount;
-    uint256 public afterSwapCount;
-
     mapping(PoolId poolId => MedianState median) public medians;
 
     struct MedianState {
@@ -38,7 +35,7 @@ contract RunningFrugalMedianHook is BaseHook, Test {
             beforeModifyPosition: false,
             afterModifyPosition: false,
             beforeSwap: true,
-            afterSwap: true,
+            afterSwap: false,
             beforeDonate: false,
             afterDonate: false
         });
@@ -60,14 +57,5 @@ contract RunningFrugalMedianHook is BaseHook, Test {
         median.step = int120(newStep);
         median.positive = newPositive;
         return BaseHook.beforeSwap.selector;
-    }
-
-    function afterSwap(address, PoolKey calldata, IPoolManager.SwapParams calldata, BalanceDelta, bytes calldata)
-        external
-        override
-        returns (bytes4)
-    {
-        afterSwapCount++;
-        return BaseHook.afterSwap.selector;
     }
 }
