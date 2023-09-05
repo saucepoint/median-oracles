@@ -20,8 +20,7 @@ contract FrugalMedianLensTest is HookTest, Deployers, GasSnapshot {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
 
-    TickObserver hook =
-        TickObserver(address(uint160(Hooks.AFTER_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG)));
+    TickObserver hook = TickObserver(address(uint160(Hooks.AFTER_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG)));
     FrugalMedianLens medianLens = new FrugalMedianLens(ITickObserver(address(hook)));
     PoolKey poolKey;
     PoolId poolId;
