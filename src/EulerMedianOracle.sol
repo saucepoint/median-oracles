@@ -26,22 +26,17 @@ contract EulerMedianOracle is BaseHook {
     using TickQuantisationLibrary for uint256;
     using RingBufferLibrary for uint256[8192];
 
-    uint256[8192] ringBuffer;
+    mapping(PoolId poolId => uint256[8192] ringBuffer) internal ringBuffers;
+    mapping(PoolId poolId => int16 currTick) public currTicks;
+    mapping(PoolId poolId => uint16 ringCurr) public ringCurrs;
+    mapping(PoolId poolId => uint16 ringSize) public ringSizes;
+    mapping(PoolId poolId => uint64 lastUpdate) public lastUpdates;
 
-    int16 public currTick;
-    uint16 public ringCurr;
-    uint16 public ringSize;
-    uint64 public lastUpdate;
-
-    constructor(IPoolManager _poolManager, uint16 _ringSize) BaseHook(_poolManager) {
-        ringCurr = 0;
-        ringSize = _ringSize;
-        lastUpdate = uint64(block.timestamp);
-    }
+    constructor(IPoolManager _poolManager) BaseHook(_poolManager) {}
 
     function getHooksCalls() public pure override returns (Hooks.Calls memory) {
         return Hooks.Calls({
-            beforeInitialize: false,
+            beforeInitialize: true,
             afterInitialize: false,
             beforeModifyPosition: false,
             afterModifyPosition: false,
@@ -52,19 +47,32 @@ contract EulerMedianOracle is BaseHook {
         });
     }
 
+    function beforeInitialize(address, PoolKey calldata key, uint160, bytes calldata data)
+        external
+        override
+        returns (bytes4)
+    {
+        (uint16 ringSize, uint64 lastUpdate) = abi.decode(data, (uint16, uint64));
+        PoolId id = key.toId();
+        ringSizes[id] = ringSize;
+        lastUpdates[id] = lastUpdate;
+        return BaseHook.beforeInitialize.selector;
+    }
+
     function beforeSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata, bytes calldata)
         external
         override
         returns (bytes4)
     {
-        (, int24 tick,,,,) = poolManager.getSlot0(key.toId());
+        PoolId id = key.toId();
+        (, int24 tick,,,,) = poolManager.getSlot0(id);
         int256 newTick = int256(tick);
 
         unchecked {
-            int256 _currTick = currTick;
-            uint256 _ringCurr = ringCurr;
-            uint256 _ringSize = ringSize;
-            uint256 _lastUpdate = lastUpdate;
+            int256 _currTick = currTicks[id];
+            uint256 _ringCurr = ringCurrs[id];
+            uint256 _ringSize = ringSizes[id];
+            uint256 _lastUpdate = lastUpdates[id];
 
             newTick = newTick.quantiseTick();
 
@@ -74,26 +82,27 @@ contract EulerMedianOracle is BaseHook {
 
             if (elapsed != 0) {
                 _ringCurr = (_ringCurr + 1) % _ringSize;
-                ringBuffer.write(_ringCurr, int16(_currTick), uint16(clampTime(elapsed)));
+                ringBuffers[id].write(_ringCurr, int16(_currTick), uint16(clampTime(elapsed)));
             }
 
-            currTick = int16(newTick);
-            ringCurr = uint16(_ringCurr);
-            ringSize = uint16(_ringSize);
-            lastUpdate = uint64(block.timestamp);
+            currTicks[id] = int16(newTick);
+            ringCurrs[id] = uint16(_ringCurr);
+            ringSizes[id] = uint16(_ringSize);
+            lastUpdates[id] = uint64(block.timestamp);
         }
         return BaseHook.beforeSwap.selector;
     }
 
-    function readOracle(uint256 desiredAge) external view returns (uint16, int24, int24) {
+    function readOracle(PoolKey calldata key, uint256 desiredAge) external view returns (uint16, int24, int24) {
         // returns (actualAge, median, average)
         require(desiredAge <= type(uint16).max, "desiredAge out of range");
+        PoolId id = key.toId();
 
         unchecked {
-            int256 _currTick = currTick;
-            uint256 _ringCurr = ringCurr;
-            uint256 _ringSize = ringSize;
-            uint256 cache = lastUpdate; // stores lastUpdate for first part of function, but then overwritten and used for something else
+            int256 _currTick = currTicks[id];
+            uint256 _ringCurr = ringCurrs[id];
+            uint256 _ringSize = ringSizes[id];
+            uint256 cache = lastUpdates[id]; // stores lastUpdate for first part of function, but then overwritten and used for something else
 
             uint256[] memory arr;
             uint256 actualAge = 0;
@@ -141,7 +150,7 @@ contract EulerMedianOracle is BaseHook {
 
                         if (cache == type(uint256).max) {
                             // TODO: beware of type expansion here
-                            (tick, duration) = ringBuffer.read(i);
+                            (tick, duration) = ringBuffers[id].read(i);
                         }
 
                         if (duration == 0) break; // uninitialised
