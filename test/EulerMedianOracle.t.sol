@@ -19,7 +19,7 @@ contract EulerMedianOracleTest is HookTest, Deployers, GasSnapshot {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
 
-    EulerMedianOracle hook = EulerMedianOracle(address(uint160(Hooks.BEFORE_SWAP_FLAG)));
+    EulerMedianOracle hook = EulerMedianOracle(address(uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG)));
     PoolKey poolKey;
     PoolId poolId;
 
@@ -59,8 +59,8 @@ contract EulerMedianOracleTest is HookTest, Deployers, GasSnapshot {
         uint256 gasBefore = gasleft();
         (, int24 medianPrice_) = hook.readOracle(poolKey, 50);
         int256 medianPrice = int256(medianPrice_);
-        console.log("Median Lens %s", gasBefore - gasleft());
-        assertEq(medianPrice == -465, true);
+        console.log("Euler %s", gasBefore - gasleft());
+        assertEq(medianPrice, 15);
     }
 
     function createSwaps() internal {
