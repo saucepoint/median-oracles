@@ -93,12 +93,12 @@ contract EulerMedianOracle is BaseHook {
         return BaseHook.beforeSwap.selector;
     }
 
-    function readOracle(PoolKey calldata key, uint256 desiredAge) external view returns (uint16, int24, int24) {
-        // returns (actualAge, median, average)
+    function readOracle(PoolKey calldata key, uint256 desiredAge) external view returns (uint16, int24) {
+        // returns (actualAge, median)
         require(desiredAge <= type(uint16).max, "desiredAge out of range");
-        PoolId id = key.toId();
 
         unchecked {
+            PoolId id = key.toId();
             int256 _currTick = currTicks[id];
             uint256 _ringCurr = ringCurrs[id];
             uint256 _ringSize = ringSizes[id];
@@ -181,11 +181,7 @@ contract EulerMedianOracle is BaseHook {
                 }
             }
 
-            return (
-                uint16(actualAge),
-                int24(weightedMedian(arr, actualAge / 2).unMemoryPackTick().unQuantiseTick()),
-                int24(_currTick / int256(actualAge))
-            );
+            return (uint16(actualAge), int24(weightedMedian(arr, actualAge / 2).unMemoryPackTick().unQuantiseTick()));
         }
     }
 

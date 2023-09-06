@@ -57,7 +57,7 @@ contract EulerMedianOracleTest is HookTest, Deployers, GasSnapshot {
         assertEq(tick != 0, true);
 
         uint256 gasBefore = gasleft();
-        (, int24 medianPrice_,) = hook.readOracle(poolKey, 50);
+        (, int24 medianPrice_) = hook.readOracle(poolKey, 50);
         int256 medianPrice = int256(medianPrice_);
         console.log("Median Lens %s", gasBefore - gasleft());
         assertEq(medianPrice == -465, true);
