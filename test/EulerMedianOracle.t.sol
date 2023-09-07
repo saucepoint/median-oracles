@@ -12,16 +12,14 @@ import {PoolKey} from "@uniswap/v4-core/contracts/types/PoolKey.sol";
 import {Deployers} from "@uniswap/v4-core/test/foundry-tests/utils/Deployers.sol";
 import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Currency.sol";
 import {HookTest} from "./utils/HookTest.sol";
-import {TickObserver, BufferData} from "../src/TickObserver.sol";
-import {TickObserverImplementation} from "./implementation/TickObserverImplementation.sol";
-import {FrugalMedianLens, ITickObserver} from "../src/lens/FrugalMedianLens.sol";
+import {EulerMedianOracle} from "../src/EulerMedianOracle.sol";
+import {EulerMedianOracleImplementation} from "./implementation/EulerMedianOracleImplementation.sol";
 
-contract FrugalMedianLensTest is HookTest, Deployers, GasSnapshot {
+contract EulerMedianOracleTest is HookTest, Deployers, GasSnapshot {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
 
-    TickObserver hook = TickObserver(address(uint160(Hooks.AFTER_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG)));
-    FrugalMedianLens medianLens = new FrugalMedianLens(ITickObserver(address(hook)));
+    EulerMedianOracle hook = EulerMedianOracle(address(uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG)));
     PoolKey poolKey;
     PoolId poolId;
 
@@ -32,13 +30,17 @@ contract FrugalMedianLensTest is HookTest, Deployers, GasSnapshot {
 
         // testing environment requires our contract to override `validateHookAddress`
         // well do that via the Implementation contract to avoid deploying the override with the production contract
-        TickObserverImplementation impl = new TickObserverImplementation(manager, hook);
+        EulerMedianOracleImplementation impl = new EulerMedianOracleImplementation(manager, hook);
         etchHook(address(impl), address(hook));
 
         // Create the pool
         poolKey = PoolKey(Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, 60, IHooks(hook));
         poolId = PoolIdLibrary.toId(poolKey);
-        manager.initialize(poolKey, SQRT_RATIO_1_1, ZERO_BYTES);
+        bytes memory initData = abi.encode(uint16(144), uint64(block.timestamp));
+        manager.initialize(poolKey, SQRT_RATIO_1_1, initData);
+
+        assertEq(hook.ringSizes(poolId), 144);
+        assertEq(hook.lastUpdates(poolId), block.timestamp);
 
         // Provide liquidity to the pool
         modifyPositionRouter.modifyPosition(poolKey, IPoolManager.ModifyPositionParams(-60, 60, 10 ether));
@@ -55,10 +57,10 @@ contract FrugalMedianLensTest is HookTest, Deployers, GasSnapshot {
         assertEq(tick != 0, true);
 
         uint256 gasBefore = gasleft();
-        int256 medianPrice = medianLens.readOracle(poolKey, 50);
-        console.log("Frugal Median Lens %s", gasBefore - gasleft());
-        // TODO: investigate discrepancy against true median
-        assertEq(medianPrice == -678, true);
+        (, int24 medianPrice_) = hook.readOracle(poolKey, 50);
+        int256 medianPrice = int256(medianPrice_);
+        console.log("Euler %s", gasBefore - gasleft());
+        assertEq(medianPrice, 15);
     }
 
     function createSwaps() internal {
@@ -69,7 +71,7 @@ contract FrugalMedianLensTest is HookTest, Deployers, GasSnapshot {
 
         // create 50 unique observations
         while (count < 50) {
-            (,, count,) = hook.bufferData(poolId);
+            count = uint256(hook.ringSizes(poolId));
             swap(poolKey, amount0, true);
             skip(12);
             swap(poolKey, amount1, false);

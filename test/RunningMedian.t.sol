@@ -19,8 +19,7 @@ contract RunningFrugalMedianHookTest is HookTest, Deployers, GasSnapshot {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
 
-    RunningFrugalMedianHook hook =
-        RunningFrugalMedianHook(address(uint160(Hooks.BEFORE_SWAP_FLAG)));
+    RunningFrugalMedianHook hook = RunningFrugalMedianHook(address(uint160(Hooks.BEFORE_SWAP_FLAG)));
     PoolKey poolKey;
     PoolId poolId;
 
@@ -34,8 +33,7 @@ contract RunningFrugalMedianHookTest is HookTest, Deployers, GasSnapshot {
         etchHook(address(impl), address(hook));
 
         // Create the pool
-        poolKey =
-            PoolKey(Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, 60, IHooks(hook));
+        poolKey = PoolKey(Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, 60, IHooks(hook));
         poolId = PoolIdLibrary.toId(poolKey);
         manager.initialize(poolKey, SQRT_RATIO_1_1, ZERO_BYTES);
 

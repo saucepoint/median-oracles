@@ -10,6 +10,7 @@ import {PoolIdLibrary, PoolId} from "@uniswap/v4-core/contracts/types/PoolId.sol
 import {PoolKey} from "@uniswap/v4-core/contracts/types/PoolKey.sol";
 import {BalanceDelta} from "@uniswap/v4-core/contracts/types/BalanceDelta.sol";
 import {RingBufferLibrary} from "./lib/RingBufferLibrary.sol";
+import {TickQuantisationLibrary} from "./lib/TickQuantisationLibrary.sol";
 
 struct BufferData {
     int16 currentTick;
@@ -19,13 +20,13 @@ struct BufferData {
 }
 
 contract TickObserver is BaseHook, Test {
+    using TickQuantisationLibrary for int256;
     using PoolIdLibrary for PoolKey;
     using RingBufferLibrary for uint256[8192];
 
     mapping(PoolId poolId => uint256[8192] buffer) public buffers;
     mapping(PoolId poolId => BufferData) public bufferData;
 
-    int256 constant TICK_TRUNCATION = 30;
     uint256 internal constant bufferMax = 65536;
 
     constructor(IPoolManager _poolManager) BaseHook(_poolManager) {}
@@ -44,7 +45,7 @@ contract TickObserver is BaseHook, Test {
         uint256 i;
         for (i; i < 50;) {
             (tick, duration) = buffer.read(bufferIndex);
-            sequence[49 - i] = unQuantiseTick(tick);
+            sequence[49 - i] = int256(tick).unQuantiseTick();
             unchecked {
                 ++i;
                 bufferIndex -= duration;
@@ -84,7 +85,7 @@ contract TickObserver is BaseHook, Test {
         (, int24 tick,,,,) = poolManager.getSlot0(id);
         BufferData storage data = bufferData[id];
 
-        int16 newTick = int16(quantiseTick(tick));
+        int16 newTick = int16(int256(tick).quantiseTick());
         if (newTick == data.currentTick) return BaseHook.beforeSwap.selector;
 
         uint256 timeChange = block.timestamp - data.lastUpdate;
@@ -106,18 +107,6 @@ contract TickObserver is BaseHook, Test {
     function clampTime(uint256 t) private pure returns (uint256) {
         unchecked {
             return t > type(uint16).max ? uint256(type(uint16).max) : t;
-        }
-    }
-
-    function quantiseTick(int256 tick) private pure returns (int256) {
-        unchecked {
-            return (tick + (tick < 0 ? -(TICK_TRUNCATION - 1) : int256(0))) / TICK_TRUNCATION;
-        }
-    }
-
-    function unQuantiseTick(int256 tick) private pure returns (int256) {
-        unchecked {
-            return tick * TICK_TRUNCATION + (TICK_TRUNCATION / 2);
         }
     }
 }
