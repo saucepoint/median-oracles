@@ -20,6 +20,7 @@ struct BufferData {
 
 /// @title Euler Median Oracle. Euler's implementation adapted for Uniswap v4 Hooks
 /// @notice this contract is a modification of https://github.com/euler-xyz/median-oracle/blob/master/contracts/MedianOracle.sol
+/// @notice this should not be used in production, as its only for benchmark reference purposes
 contract EulerMedianOracle is BaseHook {
     using PoolIdLibrary for PoolKey;
     using TickQuantisationLibrary for int256;
